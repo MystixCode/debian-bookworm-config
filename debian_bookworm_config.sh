@@ -8,25 +8,35 @@ lightblue=`echo -en "\e[94m"`
 underline=`echo -en "\e[4m"`
 normal=`echo -en "\e[0m"`
 
-#not superuser check
-if ! [ "$EUID" -ne 0 ] ; then
-    echo "${orange}Dont run this script as root, run as the user whose environment u want to change.$normal"
-    exit
-fi
+sudo_check() {
+    #not superuser check
+    if ! [ "$EUID" -ne 0 ] ; then
+        echo "${orange}Dont run this script as root, run as the user whose environment u want to change.$normal"
+        exit
+    fi
 
-#install sudo if not already installed
-if ! hash sudo 2>/dev/null; then
-	echo "${purple}installing sudo$normal"
-    su -c "DEBIAN_FRONTEND=noninteractive apt-get -yq install sudo"
-fi
+    #install sudo if not already installed
+    if ! hash sudo 2>/dev/null; then
+        echo "${purple}installing sudo$normal"
+        su -c "DEBIAN_FRONTEND=noninteractive apt-get -yq install sudo"
+    fi
 
-# add $USER to sudo group
-su - -c "usermod -aG sudo $USER"
-# TODO eventuell isch do a logout/restart/source command nötig oder ma könnt eifach im visudo das ALL ALL zügs innemache -> see my debian 11 script!!!!!!!!!!!!!!!!!
+    # Check if the current user is in the sudo group
+    if grep -qE "^sudo:" /etc/group; then
+        if ! groups $USER | grep -q "\bsudo\b"; then
+            echo "$USER is not a member of the sudo group. Adding to group..."
+            # Add $USER to the sudo group
+            su - -c "usermod -aG sudo $USER"
+            # TODO: You might need to perform additional steps like logout/restart or sourcing commands.
+        fi
+    else
+        echo "The sudo group does not exist."
+    fi
+} 
 
 update_system() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq update && sudo DEBIAN_FRONTEND=noninteractive apt-get -yq upgrade && sudo DEBIAN_FRONTEND=noninteractive apt-get -yq full-upgrade && sudo DEBIAN_FRONTEND=noninteractive apt-get -yq autoremove
-}
+} 
 
 install_kde_plasma_minimal() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install kde-plasma-desktop plasma-nm
@@ -44,15 +54,17 @@ install_firewall() {
 }
 
 add_contrib_source() {
-    echo "# add contrib to be able to install stuff like steam
+    echo "# Here are the debian mirrors. Other mirrors should be added in /etc/apt/sources.list.d/
 
-    deb http://mirror.init7.net/debian/ bookworm contrib
-    deb-src http://mirror.init7.net/debian/ bookworm contrib
+deb http://deb.debian.org/debian bookworm main non-free-firmware contrib
+deb-src http://deb.debian.org/debian bookworm main non-free-firmware contrib
 
-    deb http://security.debian.org/debian-security bookworm-security contrib
-    deb-src http://security.debian.org/debian-security bookworm-security contrib
+deb http://deb.debian.org/debian-security/ bookworm-security main non-free-firmware contrib
+deb-src http://deb.debian.org/debian-security/ bookworm-security main non-free-firmware contrib
 
-    " | sudo tee /etc/apt/sources.list.d/contrib.list
+deb http://deb.debian.org/debian bookworm-updates main non-free-firmware contrib
+deb-src http://deb.debian.org/debian bookworm-updates main non-free-firmware contrib
+" | sudo tee /etc/apt/sources.list
 }
 
 add_i386_arch() {
@@ -105,10 +117,28 @@ install_qemu_kvm() {
 
 install_firefox() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install firefox-esr webext-ublock-origin-firefox
-    # run firefox so it creates config files that we may want to change later
+    # run firefox so it creates config files that we to change
     firefox-esr&
     sleep 5
     pkill -f firefox
+    # modify config file
+    prefix="/home/$USER/.mozilla/firefox"
+    suffix=".default-esr/"
+    path=""
+    for f in "${prefix}"/*"${suffix}"; do
+        path="$f""user.js"
+    done
+    echo $path
+    echo "user_pref(\"browser.contentblocking.category\",custom);
+    user_pref(\"browser.privatebrowsing.autostart\", true);
+    user_pref(\"browser.shell.checkDefaultBrowser\", true);
+    user_pref(\"network.cookie.cookieBehavior\",1);
+    user_pref(\"network.cookie.lifetimePolicy\",2);
+    user_pref(\"privacy.donottrackheader.enabled\", true);
+    user_pref(\"privacy.trackingprotection.enabled\", true);
+    user_pref(\"privacy.trackingprotection.socialtracking.enabled\", true);
+    user_pref(\"signon.rememberSignons\", false);
+    " | sudo tee $path
 }
 
 install_keepass() {
@@ -251,13 +281,22 @@ Icon=application-x-shellscript" | tee $tdir/bash_script.desktop
 }
 
 create_ll_alias() {
-    #TODO errorhandling if file doesnt exist
-    # grep -qxF "alias ll='ls -lSh'" /etc/profile.d/00-aliases.sh || echo "alias ll='ls -lSh'" >> /etc/profile.d/00-aliases.sh
+    # Define the filename
+    filename="/home/$USER/.bashrc"
 
-    sudo echo "alias ll=\"ls -lha --color=always -F --group-directories-first |awk '{k=0;s=0;for(i=0;i<=8;i++){;k+=((substr(\\\$1,i+2,1)~/[rwxst]/)*2^(8-i));};j=4;for(i=4;i<=10;i+=3){;s+=((substr(\\\$1,i,1)~/[stST]/)*j);j/=2;};if(k){;printf(\\\"%0o%0o \\\",s,k);};print;}'\"" | sudo tee -a /etc/profile.d/00-aliases.sh
-
-    source /etc/profile.d/00-aliases.sh
+    # Uncomment and modify the aliases
+    sed -i '/alias ls=/s/^    #/    /g' $filename
+    sed -i '/alias dir=/s/^    #/    /g' $filename
+    sed -i '/alias vdir=/s/^    #/    /g' $filename
+    sed -i '/alias grep=/s/^    #/    /g' $filename
+    sed -i '/alias fgrep=/s/^    #/    /g' $filename
+    sed -i '/alias egrep=/s/^    #/    /g' $filename
+    sed -i '/export GCC_COLORS=/s/^#//g' $filename
+    sed -i '/alias ll=/s/^#//g' $filename
+    sed -i '/alias la=/s/^#//g' $filename
+    sed -i '/alias l=/s/^#//g' $filename
 }
+
 
 create_ssh_key() {
     # Create ssh key with pw if not exists
@@ -281,38 +320,12 @@ disable_swap() {
     sudo rm $swap_path
 }
 
-configure_firefox() {
-    prefix="/home/$USER/.mozilla/firefox"
-    suffix=".default-esr/"
-    path=""
-    for f in "${prefix}"/*"${suffix}"; do
-        path="$f""user.js"
-    done
-    echo $path
-    echo "user_pref(\"browser.contentblocking.category\",custom);
-    user_pref(\"browser.privatebrowsing.autostart\", true);
-    user_pref(\"browser.shell.checkDefaultBrowser\", true);
-    user_pref(\"network.cookie.cookieBehavior\",1);
-    user_pref(\"network.cookie.lifetimePolicy\",2);
-    user_pref(\"privacy.donottrackheader.enabled\", true);
-    user_pref(\"privacy.trackingprotection.enabled\", true);
-    user_pref(\"privacy.trackingprotection.socialtracking.enabled\", true);
-    user_pref(\"signon.rememberSignons\", false);
-    " | sudo tee $path
+copy_custom_themes() {
+    cp -r -a .local/share $HOME/.local/share
 }
 
 install_simple_menu() {
     echo "TODO simple menu"
-#    echo "${orange}Manually download to /home/$USER/Downloads/ from here:$normal"
-#    echo "${lightblue}${underline}https://store.kde.org/s/KDE%20Store/p/1275285$normal"
-#    read -p "${red}Then Press enter to continue$normal"
-#    #TODO automate this with permanent working link
-#    #wget -O ~/Downloads/minimalmenu-0.3.0.plasmoid https://dllb2.pling.com/api/files/download/j/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE1NDMwNDk1NDQiLCJ1IjpudWxsLCJsdCI6ImRvd25sb2FkIiwicyI6IjQ5Yjk5Nzg5N2U5NGExYWUxYWM3MmNiZWU1ZWI0MWJlMWFiYzE4OTIxOTBlZGQyMDU0MjhmN2QzNjEzODg1MGVlYzZkNDA1ZGQzOWZmMTlkZjg3Mjk0NTE2MTY5ZDY0YjYyODJkZTMyMzhkNDVlMjI1MDFjYWM5MzI4M2M2ZWVjIiwidCI6MTYyNTM1MzczNywic3RmcCI6IjQ2NGQ2YTAxZGQ1Mjk5NzY3OWE3ZDE1Nzk1OTBlYTM0Iiwic3RpcCI6IjJhMDI6MTIwNTozNGMxOmUwYzA6NzJjMDphNWZkOjkxNzU6NmQ2In0.WCdUSToV3lxljvpDuaCH_jrC89NfNvc6n0YGXsWlZq8/minimalmenu-0.3.0.plasmoid
-#    sudo kpackagetool5 -i ~/Downloads/minimalmenu-0.3.0.plasmoid
-#    kwriteconfig5 --file ~/.config/plasma-org.kde.plasma.desktop-appletsrc --group Containments --group 3 --group Applets --group 24 --group Configuration --group General --key customButtonImage /usr/share/pixmaps/debian-logo.png
-#    kwriteconfig5 --file ~/.config/plasma-org.kde.plasma.desktop-appletsrc --group Containments --group 3 --group Applets --group 24 --group Configuration --group General --key favoritesPortedToKAstats true
-#    kwriteconfig5 --file ~/.config/plasma-org.kde.plasma.desktop-appletsrc --group Containments --group 3 --group Applets --group 24 --group Configuration --group General --key switchCategoriesOnHover false
-#    kwriteconfig5 --file ~/.config/plasma-org.kde.plasma.desktop-appletsrc --group Containments --group 3 --group Applets --group 24 --group Configuration --group General --key useCustomButtonImage true
 }
 
 install_sddm_theme() {
@@ -396,6 +409,20 @@ change_global_theme_light() {
     splash_screen "org.kde.breeze.desktop"
 }
 
+change_global_theme_to_mystix() {
+    install_sddm_theme
+    look_and_feel "MystixGlobalTheme"
+    plasma_theme "MystixPlasmaTheme"
+    application_style_edit "Breeze"
+    window_decoration "org.kde.breeze" "Breeze"
+    gtk_theme "Breeze"
+    color_scheme "MystixColorScheme"
+    icons "breeze-dark"
+    cursor "breeze_cursors"
+    gtk_cursor "breeze_cursors"
+    splash_screen "org.kde.breeze.desktop"
+}
+
 change_wallpaper() {
     echo "${orange}Choose standard wallpaper$normal"
     wallpaper=$(zenity --file-selection --title="Choose standard wallpaper")
@@ -422,29 +449,47 @@ change_wallpaper() {
 
 restart_ui() {
     qdbus org.kde.KWin /KWin reconfigure
-    kquitapp5 plasmashell && kstart5 plasmashell
+    killall plasmashell
+    nohup kstart5 plasmashell & >/dev/null 2>&1
 }
+
+functions_array=(
+    update_system install_kde_plasma_minimal reboot_now install_firewall install_steam
+    install_gimp install_krita install_blender install_go install_qemu_kvm install_firefox
+    install_keepass install_thunderbird install_obs-studio install_baobab install_nethogs
+    install_ark install_kcalc install_kde-spectacle install_okular install_gwenview
+    install_neofetch install_htop install_plasma-sdk install_cava install_docker-ce
+    remove_software disable_wifi disable_bluetooth enable_airplane_mode disable_history
+    disable_mouse_acceleration configure_dolphin create_file_templates create_ll_alias
+    create_ssh_key disable_swap install_simple_menu configure_lockscreen
+    change_global_theme_dark change_global_theme_light change_global_theme_to_mystix
+    change_wallpaper restart_ui
+)
 
 helpmenu(){
     echo "${lightblue}###############################$normal"
     echo "${lightblue}## debian_bookworm_config.sh ##$normal"
     echo "${lightblue}###############################$normal"
-    echo "${purple}Usage:$normal bash debian_bookworm_config.sh <option>"
+    echo "${purple}Usage:$normal bash debian_bookworm_config.sh <option> <option> <option>"
     echo "Starts in interactive mode without arguments"
     echo ""
     echo "-h        --help                    Display Help"
     echo ""
     echo "${purple}Options:$normal"
-    echo -e "update_system\ninstall_kde_plasma_minimal\nreboot_now\ninstall_firewall\ninstall_steam\ninstall_gimp\ninstall_krita\ninstall_blender\ninstall_go\ninstall_qemu_kvm\ninstall_firefox\ninstall_keepass\ninstall_thunderbird\ninstall_obs-studio\ninstall_baobab\ninstall_nethogs\ninstall_ark\n install_kcalc\ninstall_kde-spectacle\ninstall_okular\ninstall_gwenview\ninstall_neofetch\ninstall_htop\ninstall_plasma-sdk\ninstall_cava\ninstall_docker-ce\nremove_software\ndisable_wifi\ndisable_bluetooth\nenable_airplane_mode\ndisable_history\ndisable_mouse_acceleration\nconfigure_dolphin\ncreate_file_templates\ncreate_ll_alias\ncreate_ssh_key\ndisable_swap\nconfigure_firefox\ninstall_simple_menu\nconfigure_lockscreen\nchange_global_theme_dark\nchange_global_theme_light\nchange_wallpaper\nrestart_ui"
+
+    for func in "${functions_array[@]}"; do
+        echo -e "$func"
+    done
+
     exit
 }
 
-functions_array=(update_system install_kde_plasma_minimal reboot_now install_firewall install_steam install_gimp install_krita install_blender install_go install_qemu_kvm install_firefox install_keepass install_thunderbird install_obs-studio install_baobab install_nethogs install_ark install_kcalc install_kde-spectacle install_okular install_gwenview install_neofetch install_htop install_plasma-sdk install_cava install_docker-ce remove_software disable_wifi disable_bluetooth enable_airplane_mode disable_history disable_mouse_acceleration configure_dolphin create_file_templates create_ll_alias create_ssh_key disable_swap configure_firefox install_simple_menu configure_lockscreen change_global_theme_dark change_global_theme_light change_wallpaper restart_ui)
+sudo_check
 if [[ " $# " -ne 0 ]]; then
     #echo "${orange}Total Arguments: $# $normal"
     for i in $@
     do
-        if [[ ${i} = "-h" || ${i} = "--help" ]]; then
+        if [[ ${i} = "-h" || ${i} = "--help" || ${i} = "help" ]]; then
             helpmenu
         fi
         if [[ " ${functions_array[@]} " =~ " ${i} " ]]; then
@@ -478,7 +523,7 @@ fi
 #TODO sysctl network interface to 1GB 2.5GB 10GB
 
 ## Theme stuff
-#TODO copy my custom themes/colorschemes and activate them via this script
+#TODO my custom themes/colorschemes -> activate them via this script
 #TODO login screen wallpaper
 #TODO blender theme
 
@@ -504,8 +549,6 @@ fi
 #221f3a
 
 
-
-
 #Text white
 #d2bff4
 
@@ -517,4 +560,3 @@ fi
 
 #links
 #3c72c3
-
