@@ -295,6 +295,8 @@ create_ll_alias() {
     sed -i '/alias ll=/s/^#//g' $filename
     sed -i '/alias la=/s/^#//g' $filename
     sed -i '/alias l=/s/^#//g' $filename
+    sed -i 's/ls -l/ls -lha/g' $filename
+    source $filename
 }
 
 
