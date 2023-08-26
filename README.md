@@ -1,13 +1,39 @@
 # debian-bookworm-config
 
-Good documentation intensifies ;)
+<img src="/screenshot_1.png" width="100%" height="100%">
+
+## HowTo
+
+ 1. Download Debian 12 iso
+ 2. Write iso to usb stick using either Rufus, Balena Etcher or the DD command (replace /dev/sda with your usb device!):
+```shell
+lsblk -f
+sudo dd bs=4M if=$HOME/Downloads/debian-12.1.0-amd64-netinst.iso of=/dev/sda oflag=sync status=progress
+```
+ 3. Boot from usb stick -> Advanced Options -> Expert Install. \
+    Install debian minimal without desktop/software!
+ 4. Login as root
+ 5. Install git
+ ```bash
+apt-get install git
+su <yourusername>
+cd
+git config --global user.name "Sarah Smith"
+git config --global user.email "sarah.smith@email.com"
+mkdir git
+cd git
+ ```
+ 6. Download this repo and start script
+```bash
+git clone https://github.com/MystixCode/debian-bookworm-config.git
+cd debian-bookworm-config
+chmod u+x debian_bookworm_config.sh
+./debian_bookworm_config.sh
+```
+
+## Arguments
 
 ```
- ./debian_bookworm_config.sh help
-###############################
-## debian_bookworm_config.sh ##
-###############################
-
 Usage: ./debian_bookworm_config.sh <arg> <arg> <arg>
 Starts in interactive mode without arguments
 
@@ -59,5 +85,3 @@ restart_ui                     Restart user interface
 display_settings               Display settings
 -h, --help, help               Display this help menu
 ```
-
-<img src="/screenshot_1.png" width="100%" height="100%">
