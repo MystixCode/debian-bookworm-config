@@ -452,7 +452,24 @@ change_wallpaper() {
 restart_ui() {
     qdbus org.kde.KWin /KWin reconfigure
     killall plasmashell
-    nohup kstart5 plasmashell & >/dev/null 2>&1
+    nohup kstart5 plasmashell >/dev/null 2>&1 & # runs in background, silent
+}
+
+display_settings() {
+    # Get the list of connected and enabled outputs
+    outputs=$(kscreen-doctor -j | jq -r '.outputs[] | select(.enabled == true and .connected == true) | .name')
+
+    # Loop through each output and set the highest refresh rate
+    for output in $outputs; do
+        preferred_mode_id=$(kscreen-doctor -j | jq -r --arg output "$output" '.outputs[] | select(.name == $output) | .modes | sort_by(.refreshRate, .size.width, .size.height) | last | .id')
+        nohup kscreen-doctor "output.$output.mode.$preferred_mode_id" >/dev/null 2>&1 & 
+
+        # Enable adaptive sync
+        nohup kscreen-doctor "output.$output.vrrpolicy.always" >/dev/null 2>&1 & 
+    done
+
+    # This code is not perfect. If u face any issues go to kde settings>hardwared>display and monitor --> and move em around
+    # Possible "work around" would be to first set highest resolution available and then later highest Hz with that resolution
 }
 
 functions_array=(
@@ -465,7 +482,7 @@ functions_array=(
     disable_mouse_acceleration configure_dolphin create_file_templates create_ll_alias
     create_ssh_key disable_swap install_simple_menu configure_lockscreen
     change_global_theme_dark change_global_theme_light change_global_theme_to_mystix
-    change_wallpaper restart_ui
+    change_wallpaper restart_ui display_settings
 )
 
 helpmenu(){
@@ -515,8 +532,6 @@ else
 fi
 
 ## Script stuff
-#TODO monitor to max hertz and enable sync
-#TODO pin fav software to panel
 #TODO allow ublock in private windows
 #TODO enable num
 #TODO konsole>general>show window title on titlebar
