@@ -1,5 +1,7 @@
 # debian-bookworm-config
 
+This is a bash script to install and configure software on a debian 12 bookworm.
+
 <img src="/screenshot_1.png" width="100%" height="100%">
 
 ## HowTo
