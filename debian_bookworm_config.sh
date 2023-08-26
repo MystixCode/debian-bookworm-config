@@ -480,37 +480,76 @@ display_settings() {
     # Possible "work around" would be to first set highest resolution available and then later highest Hz with that resolution
 }
 
+# Array of functions with descriptions
 functions_array=(
-    update_system install_kde_plasma_minimal reboot_now install_firewall install_steam
-    install_gimp install_krita install_blender install_go install_qemu_kvm install_firefox
-    install_keepass install_thunderbird install_obs-studio install_baobab install_nethogs
-    install_ark install_kcalc install_kde-spectacle install_okular install_gwenview
-    install_neofetch install_htop install_plasma-sdk install_cava install_docker-ce
-    remove_software disable_wifi disable_bluetooth enable_airplane_mode disable_history
-    disable_mouse_acceleration configure_dolphin create_file_templates create_ll_alias
-    create_ssh_key disable_swap install_simple_menu configure_lockscreen
-    change_global_theme_dark change_global_theme_light change_global_theme_to_mystix
-    change_wallpaper restart_ui display_settings
+    "update_system:Update the system packages"
+    "install_kde_plasma_minimal:Install KDE Plasma minimal desktop"
+    "reboot_now:Reboot the system"
+    "install_firewall:Install a firewall"
+    "install_steam:Install Steam"
+    "install_gimp:Install GIMP"
+    "install_krita:Install Krita"
+    "install_blender:Install Blender"
+    "install_go:Install Go programming language"
+    "install_qemu_kvm:Install QEMU-KVM"
+    "install_firefox:Install Firefox"
+    "install_keepass:Install KeePass password manager"
+    "install_thunderbird:Install Thunderbird email client"
+    "install_obs_studio:Install OBS Studio"
+    "install_baobab:Install Baobab disk usage analyzer"
+    "install_nethogs:Install Nethogs network traffic monitor"
+    "install_ark:Install Ark archive manager"
+    "install_kcalc:Install KCalc calculator"
+    "install_kde_spectacle:Install KDE Spectacle screenshot tool"
+    "install_okular:Install Okular document viewer"
+    "install_gwenview:Install Gwenview image viewer"
+    "install_neofetch:Install Neofetch system information tool"
+    "install_htop:Install htop system monitor"
+    "install_plasma_sdk:Install Plasma SDK"
+    "install_cava:Install Cava audio visualizer"
+    "install_docker_ce:Install Docker CE"
+    "remove_software:Remove specified software"
+    "disable_wifi:Disable Wi-Fi"
+    "disable_bluetooth:Disable Bluetooth"
+    "enable_airplane_mode:Enable airplane mode"
+    "disable_history:Disable kde history (Recent Files, Recent Locations)"
+    "disable_mouse_acceleration:Disable mouse acceleration"
+    "configure_dolphin:Configure Dolphin file manager"
+    "create_file_templates:Create file templates in Dolphin"
+    "create_ll_alias:Create 'll' alias and add some color"
+    "create_ssh_key:Create SSH key pair"
+    "disable_swap:Disable swap space"
+    "install_simple_menu:Install Simple Menu application launcher"
+    "configure_lockscreen:Configure lock screen settings"
+    "change_global_theme_dark:Change global theme to dark"
+    "change_global_theme_light:Change global theme to light"
+    "change_global_theme_to_mystix:Change global theme to Mystix"
+    "change_wallpaper:Change wallpaper"
+    "restart_ui:Restart user interface"
+    "display_settings:Display settings"
 )
 
 helpmenu(){
     echo "${lightblue}###############################$normal"
     echo "${lightblue}## debian_bookworm_config.sh ##$normal"
     echo "${lightblue}###############################$normal"
-    echo "${purple}Usage:$normal bash debian_bookworm_config.sh <option> <option> <option>"
+    echo ""
+    echo "${purple}Usage:$normal ./debian_bookworm_config.sh <arg> <arg> <arg>"
     echo "Starts in interactive mode without arguments"
     echo ""
-    echo "-h        --help                    Display Help"
-    echo ""
-    echo "${purple}Options:$normal"
+    echo "${purple}Arguments:$normal"
 
     for func in "${functions_array[@]}"; do
-        echo -e "$func"
+        description="${func#*:}"
+        printf "%-30s %s\n" "${func%%:*}" "$description"
     done
-
+    
+    echo "-h, --help, help               Display this help menu"
+    echo ""
     exit
 }
 
+#RUN THE FUNCTIONS
 sudo_check
 if [[ " $# " -ne 0 ]]; then
     #echo "${orange}Total Arguments: $# $normal"
@@ -519,7 +558,7 @@ if [[ " $# " -ne 0 ]]; then
         if [[ ${i} = "-h" || ${i} = "--help" || ${i} = "help" ]]; then
             helpmenu
         fi
-        if [[ " ${functions_array[@]} " =~ " ${i} " ]]; then
+        if [[ " ${functions_array[@]%%:*} " =~ " ${i} " ]]; then
             # whatever you want to do when array contains value
             echo "${green}Option ${i} valid$normal"
             ${i} #exec function
@@ -529,12 +568,12 @@ if [[ " $# " -ne 0 ]]; then
     done
 else
     for i in "${functions_array[@]}"; do
-        formatted1=${i//_/ }
+        formatted1=${i%%:*//_/ }
         formatted2=${formatted1^}
         echo -n "${purple}${formatted2^} (y/n)? $normal"
         read answer
         if [ "$answer" != "${answer#[Yy]}" ] ;then
-            ${i}
+            ${i%%:*}
         fi
     done
 fi
@@ -548,40 +587,6 @@ fi
 #TODO sysctl network interface to 1GB 2.5GB 10GB
 
 ## Theme stuff
-#TODO my custom themes/colorschemes -> activate them via this script
+#TODO my custom themes/colorschemes -> activate them via this script (kate, kwrite etc)
 #TODO login screen wallpaper
 #TODO blender theme
-
-
-
-#Primary Dark
-#320a5a
-
-#Primary
-#481c74
-
-#primary light
-#5d308a
-
-
-#background dark
-#151124
-
-#background
-#191628
-
-#background light
-#221f3a
-
-
-#Text white
-#d2bff4
-
-#Text intense
-#734596
-
-#Text intense 2
-#7102ad
-
-#links
-#3c72c3
