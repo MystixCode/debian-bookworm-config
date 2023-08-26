@@ -342,7 +342,6 @@ create_ll_alias() {
     source $filename
 }
 
-
 create_ssh_key() {
     # Create ssh key with pw if not exists
     FILE=~/.ssh/id_ed25519.pub
@@ -512,7 +511,11 @@ display_settings() {
     done
 
     # This code is not perfect. If u face any issues go to kde settings>hardwared>display and monitor --> and move em around
-    # Possible "work around" would be to first set highest resolution available and then later highest Hz with that resolution
+    # Mayne possible "work around" would be to first set highest resolution available and then later highest Hz with that resolution
+}
+
+enable_numlock() {
+    kwriteconfig5 --file ~/.config/kcminputrc --group Keyboard --key NumLock 0
 }
 
 # Array of functions with descriptions
@@ -563,6 +566,7 @@ functions_array=(
     "change_wallpaper:Change wallpaper"
     "restart_ui:Restart user interface"
     "display_settings:Display settings"
+    "enable_numlock:Enable NumLock on Plasma Startup"
 )
 
 helpmenu(){
@@ -595,7 +599,7 @@ if [[ " $# " -ne 0 ]]; then
             helpmenu
         fi
         if [[ " ${functions_array[@]%%:*} " =~ " ${i} " ]]; then
-            # whatever you want to do when array contains value
+            #when functions_array contains input argument
             echo "${green}Option ${i} valid$normal"
             ${i} #exec function
         else
@@ -614,15 +618,10 @@ else
     done
 fi
 
-## Script stuff
+## Some ideas
 #TODO allow ublock in private windows
-#TODO enable num
 #TODO konsole>general>show window title on titlebar
 #TODO konsole hide main and session toolbar
 #TODO Window Decorations > Titlebar Buttons -->burger menu
 #TODO sysctl network interface to 1GB 2.5GB 10GB
-
-## Theme stuff
 #TODO my custom themes/colorschemes -> activate them via this script (kate, kwrite etc)
-#TODO login screen wallpaper
-#TODO blender theme

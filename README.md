@@ -86,5 +86,6 @@ change_global_theme_to_mystix  Change global theme to Mystix
 change_wallpaper               Change wallpaper
 restart_ui                     Restart user interface
 display_settings               Display settings
+enable_numlock                 Enable NumLock on Plasma Startup
 -h, --help, help               Display this help menu
 ```
