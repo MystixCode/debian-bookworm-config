@@ -169,7 +169,7 @@ install_kcalc() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install kcalc
 }
 
-install_kde-spectacle() {
+install_kde_spectacle() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install kde-spectacle
 }
 
