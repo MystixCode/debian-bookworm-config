@@ -51,6 +51,7 @@ install_blender                Install Blender
 install_go                     Install Go programming language
 install_qemu_kvm               Install QEMU-KVM
 install_firefox                Install Firefox
+install_ms_teams               Install Microsoft Teams Web App
 install_keepass                Install KeePass password manager
 install_thunderbird            Install Thunderbird email client
 install_obs_studio             Install OBS Studio
