@@ -141,6 +141,41 @@ install_firefox() {
     " | sudo tee $path
 }
 
+install_ms_teams() {
+    install_firefox
+
+    #lets create a new firefox profile to isolate it ;)
+    firefox-esr --createprofile msteams
+
+    #create shortcut for startmenu and search (alt+f2)
+   echo -e "[Desktop Entry]
+Name=Microsoft Teams
+GenericName=Web Browser
+Exec=/usr/lib/firefox-esr/firefox-esr https://teams.microsoft.com -P msteams
+Terminal=false
+Type=Application
+Icon=firefox-esr
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/vnd.mozilla.xul+xml;application/rss+xml;application/rdf+xml;image/gif;image/jpeg;image/png;x-scheme-handler/http;x-scheme-handler/https;
+StartupWMClass=Firefox-esr
+StartupNotify=true" | tee ~/.local/share/applications/msteams.desktop
+
+    chmod 0755 ~/.local/share/applications/msteams.desktop
+
+    #Copy the shortcut to desktop. (asuming os lang en)
+    cp ~/.local/share/applications/msteams.desktop /home/$USER/Desktop/msteams.desktop
+
+    #Create cookie exceptions notice:
+    echo "${red}You need to manually add following cookie exceptions in firefox:"
+    echo "https://microsoft.com"
+    echo "https://microsoftonline.com"
+    echo "https://teams.skype.com"
+    echo "https://teams.microsoft.com"
+    echo "https://sfbassets.com"
+    echo "https://skypeforbusiness.com$normal"
+
+}
+
 install_keepass() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install keepass2
 }
@@ -493,6 +528,7 @@ functions_array=(
     "install_go:Install Go programming language"
     "install_qemu_kvm:Install QEMU-KVM"
     "install_firefox:Install Firefox"
+    "install_ms_teams:Install Microsoft Teams Web App"
     "install_keepass:Install KeePass password manager"
     "install_thunderbird:Install Thunderbird email client"
     "install_obs_studio:Install OBS Studio"
