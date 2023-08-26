@@ -264,6 +264,7 @@ create_file_templates() {
     tdir=$HOME/Templates
     echo "#!/usr/bin/env python3" > $tdir/python_script.py
     echo "#!/bin/bash" > $tdir/bash_script.sh
+    echo -e "# Hello World\n## foo" > $tdir/markdown.md
 
     echo -e "[Desktop Entry]
 Name=python_script
@@ -278,6 +279,13 @@ Comment=bash_script
 Type=Link
 URL=bash_script.sh
 Icon=application-x-shellscript" | tee $tdir/bash_script.desktop
+
+    echo -e "[Desktop Entry]
+Name=markdown
+Comment=markdown
+Type=Link
+URL=markdown.md
+Icon=text-x-markdown" | tee $tdir/markdown.desktop
 }
 
 create_ll_alias() {
