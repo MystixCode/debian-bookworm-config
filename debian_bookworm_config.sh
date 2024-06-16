@@ -35,7 +35,11 @@ sudo_check() {
 } 
 
 update_system() {
-    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq update && sudo DEBIAN_FRONTEND=noninteractive apt-get -yq upgrade && sudo DEBIAN_FRONTEND=noninteractive apt-get -yq full-upgrade && sudo DEBIAN_FRONTEND=noninteractive apt-get -yq autoremove
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq upgrade
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq full-upgrade
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq autoremove
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq clean
 } 
 
 install_kde_plasma_minimal() {
@@ -53,7 +57,7 @@ install_firewall() {
     sudo ufw enable
 }
 
-add_contrib_source() {
+install_steam() {
     echo "# Here are the debian mirrors. Other mirrors should be added in /etc/apt/sources.list.d/
 
 deb http://deb.debian.org/debian bookworm main non-free-firmware contrib
@@ -65,15 +69,7 @@ deb-src http://deb.debian.org/debian-security/ bookworm-security main non-free-f
 deb http://deb.debian.org/debian bookworm-updates main non-free-firmware contrib
 deb-src http://deb.debian.org/debian bookworm-updates main non-free-firmware contrib
 " | sudo tee /etc/apt/sources.list
-}
-
-add_i386_arch() {
     sudo dpkg --add-architecture i386
-}
-
-install_steam() {
-    add_contrib_source
-    add_i386_arch
     sudo apt-get -qq update
     sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install steam
 }
@@ -248,10 +244,10 @@ https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
     sudo apt-get -yqq install docker-ce docker-ce-cli containerd.io docker-compose-plugin
     # add $USER to sudo group
     sudo usermod -aG docker $USER
-    newgrp docker #to initialise new group to session without logout/login
+    #newgrp docker #to initialise new group to session without logout/login
     # fix permissiom
-    sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
-    sudo chmod g+rwx "$HOME/.docker" -R
+    #sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
+    #sudo chmod g+rwx "$HOME/.docker" -R
     # enable docker service
     sudo systemctl start docker.service
     sudo systemctl enable docker.service
@@ -259,6 +255,14 @@ https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
     #docker --version
     #docker compose version
     echo "You may need to logout and login again to use docker command!"
+}
+
+install_libreoffice() {
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install libreoffice libreoffice-plasma
+}
+
+install_vlc() {
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install vlc
 }
 
 remove_software() {
@@ -276,6 +280,15 @@ disable_bluetooth() {
 
 enable_airplane_mode() {
     kwriteconfig5 --file ~/.config/plasma-nm --group General --key AirplaneModeEnabled true
+}
+
+set_txqueuelen() {
+    orange=`echo -en "\e[33m"`
+    read -p "${orange}Set txqueuelen to [10000]: $normal" input
+    QLEN=${input:-10000}
+    echo $QLEN
+    IFACE=$(ip -o -4 route show to default | awk '{print $5}')
+    sudo ip link set dev $IFACE txqueuelen $QLEN
 }
 
 disable_history() {
@@ -356,12 +369,17 @@ create_ssh_key() {
 disable_swap() {
     # This may need some more testing and imppovement ;)
     swap_path=$(sudo tail -n 1 /etc/fstab | grep swap | cut -d " " -f1)
-    sudo swapoff $swap_path
-    sudo sed -i '/^[^#]/ s/\(^.*swap.*$\)/#\ \1/' /etc/fstab
-    #if lvm
-    sudo lvremove $swap_path
-    #if normal
-    sudo rm $swap_path
+    if [ -z "$swap_path" ]; then
+      echo "\$swap_path is empty"
+      sudo swapoff -a
+    else
+        sudo swapoff $swap_path
+        sudo sed -i '/^[^#]/ s/\(^.*swap.*$\)/#\ \1/' /etc/fstab
+        #if lvm
+        sudo lvremove $swap_path
+        #if normal
+        sudo rm $swap_path
+    fi
 }
 
 copy_custom_themes() {
@@ -369,7 +387,12 @@ copy_custom_themes() {
 }
 
 install_simple_menu() {
-    echo "TODO simple menu"
+    plasmoid_path=~/.local/share/plasma/plasmoids
+    mkdir -p  $plasmoid_path
+    wget -c https://github.com/KDE/plasma-simplemenu/archive/refs/tags/v1.0.12.tar.gz -O - | tar -xz -C $plasmoid_path
+    mv ${plasmoid_path}/plasma-simplemenu-1.0.12/package ${plasmoid_path}/org.kde.plasma.simplemenu
+    rm -rf ${plasmoid_path}/plasma-simplemenu-1.0.12/
+    #TODO actually change the menü to simplemenu
 }
 
 install_sddm_theme() {
@@ -534,7 +557,7 @@ functions_array=(
     "install_ms_teams:Install Microsoft Teams Web App"
     "install_keepass:Install KeePass password manager"
     "install_thunderbird:Install Thunderbird email client"
-    "install_obs_studio:Install OBS Studio"
+    "install_obs-studio:Install OBS Studio"
     "install_baobab:Install Baobab disk usage analyzer"
     "install_nethogs:Install Nethogs network traffic monitor"
     "install_ark:Install Ark archive manager"
@@ -544,9 +567,12 @@ functions_array=(
     "install_gwenview:Install Gwenview image viewer"
     "install_neofetch:Install Neofetch system information tool"
     "install_htop:Install htop system monitor"
-    "install_plasma_sdk:Install Plasma SDK"
+    "install_plasma-sdk:Install Plasma SDK"
     "install_cava:Install Cava audio visualizer"
-    "install_docker_ce:Install Docker CE"
+    "install_docker-ce:Install Docker CE"
+    "install_libreoffice:Install libreoffice and libreoffice-plasma"
+    "install_vlc:Install vlc media player"
+    "set_txqueuelen:Set network device qlen to 10000 for 10GBit/s cards"
     "remove_software:Remove specified software"
     "disable_wifi:Disable Wi-Fi"
     "disable_bluetooth:Disable Bluetooth"
@@ -608,12 +634,12 @@ if [[ " $# " -ne 0 ]]; then
     done
 else
     for i in "${functions_array[@]}"; do
-        formatted1=${i%%:*//_/ }
-        formatted2=${formatted1^}
-        echo -n "${purple}${formatted2^} (y/n)? $normal"
+        formatted1="$(cut -d':' -f1 <<<$i)"
+        formatted2="$(cut -d':' -f2 <<<$i)"
+        echo -n "${lightblue}${formatted2^} (y/n)? $normal"
         read answer
         if [ "$answer" != "${answer#[Yy]}" ] ;then
-            ${i%%:*}
+            ${formatted1}
         fi
     done
 fi
@@ -623,5 +649,15 @@ fi
 #TODO konsole>general>show window title on titlebar
 #TODO konsole hide main and session toolbar
 #TODO Window Decorations > Titlebar Buttons -->burger menu
-#TODO sysctl network interface to 1GB 2.5GB 10GB
 #TODO my custom themes/colorschemes -> activate them via this script (kate, kwrite etc)
+#TODO put taskbar left
+#TODO add favorites to taskbar
+#TODO new theme
+#TODO firefox settings and privacy addons
+#TODO find a way to properly apply my new theme without all that functions. just like when i change it via gui. one command
+#TODO no splash screen or custom one -> should be its own independend function
+#TODO add new wallpaper everywhere
+#TODO set user picture
+#TODO check if disable bluetooth and deleting history actually works
+#TODO check if txquelen is persistent after reboot
+#TODO some preconfigured desktop widgets?

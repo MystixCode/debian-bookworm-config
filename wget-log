@@ -1,0 +1,16 @@
+--2024-06-16 03:37:33--  https://github.com/KDE/plasma-simplemenu/archive/refs/tags/v1.0.12.tar.gz
+Resolving github.com (github.com)... 140.82.121.4
+Connecting to github.com (github.com)|140.82.121.4|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://codeload.github.com/KDE/plasma-simplemenu/tar.gz/refs/tags/v1.0.12 [following]
+--2024-06-16 03:37:33--  https://codeload.github.com/KDE/plasma-simplemenu/tar.gz/refs/tags/v1.0.12
+Resolving codeload.github.com (codeload.github.com)... 140.82.121.9
+Connecting to codeload.github.com (codeload.github.com)|140.82.121.9|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [application/x-gzip]
+Saving to: ‘STDOUT’
+
+-                             [<=>                                ]       0  --.-KB/s               -                             [ <=>                               ]  22.09K  --.-KB/s    in 0.007s  
+
+2024-06-16 03:37:34 (3.19 MB/s) - written to stdout [22616]
+
